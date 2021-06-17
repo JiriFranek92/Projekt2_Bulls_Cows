@@ -1,13 +1,20 @@
 from random import sample
+from time import time
+import pandas as pd
 
+# načti herní statistiky do dataframe
+game_stats = pd.read_csv("game_stats.csv", dtype={"time_to_win": "float"})
+
+# generuj tajné číslo
 while True:
     secret_num = [str(item) for item in sample(range(0, 10), 4)]
     if secret_num[0] != '0':
         break
 
-# print(secret_num)
-
-n_guesses = 0
+# inicializuj statistiku probíhajíci hry a zaznamenej čas začátku hry
+current_stats = pd.Series({"game_id": 0, "n_guesses": 0, "time_to_win": 0.0})
+current_stats["game_id"] = game_stats["game_id"].max() + 1 if not game_stats.empty else 1
+start_time = time()
 
 while True:
     counter = {"bull": 0, "cow": 0}
@@ -28,7 +35,7 @@ while True:
         print("Each digit must be unique!")
         continue
 
-    n_guesses += 1
+    current_stats["n_guesses"] += 1
 
     # vyhodnoť tip, zapiš do počítadla
     for i, digit in enumerate(guess):
@@ -41,9 +48,16 @@ while True:
     # vypiš verdikt
     verdict = ""
     for key, value in counter.items():
-        verdict += f"{value} {key} " if value == 1 else f"{value} {key}s "
+        verdict += f"| {value} {key} " if value == 1 else f"| {value} {key}s "
     print(verdict)
 
     if counter["bull"] == 4:
-        print(f"Great Success! {n_guesses} guesses.")
+        current_stats["time_to_win"] = round(time() - start_time, 2)
+        print(f"Great Success!")
+        print(f"Guesses: {current_stats['n_guesses']} ( average: {game_stats['n_guesses'].mean().round(2)} )")
+        print(f"Game time: {current_stats['time_to_win']}s ( average: {game_stats['time_to_win'].mean().round(2)}s )")
         break
+
+# přidej statistiky poslední hry do dataframe, ulož do csv
+game_stats = game_stats.append(current_stats, ignore_index=True)
+game_stats.to_csv("game_stats.csv", index=False)
