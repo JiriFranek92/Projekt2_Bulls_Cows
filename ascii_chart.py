@@ -2,14 +2,14 @@ import pandas as pd
 
 
 def ascii_chart(data, x, chart_type, n=10, binwidth=None, precision=3,
-                labels=None, symbol="*", sort=True, sort_by="values",
+                labels=None, symbol="#", sort=True, sort_by="values",
                 asc=True, max_symbols=100):
     """ vezme DataFrame a pro zvolený sloupec vypíše ascii sloupcový graf,
      nebo histogram
     :param data: Zdrojový DataFrame.
     :param x: Název sloupce dat.
     :param chart_type: Typ grafu.
-     Možnosti: "bar" -> sloupcový, "hist" -> histogram
+        Možnosti: "bar" -> sloupcový, "hist" -> histogram
     :param n: počet tříd histogramu
     :param binwidth: přibližná šířka tříd histogramu
     :param precision: řád zaokrouhlení hranic tříd histogramu
@@ -17,6 +17,7 @@ def ascii_chart(data, x, chart_type, n=10, binwidth=None, precision=3,
     :param symbol: Symbol, který se používá pro sloupce.
     :param sort: Jestli má být graf seřazen.
     :param sort_by: Jestli řadit podle hodnot, nebo podle indexu
+        ("values"/"index")
     :param asc: Jestli se má graf řadit vzestupně.
     :param max_symbols: Maximální délka sloupce v symbolech.
     """

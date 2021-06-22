@@ -1,104 +1,99 @@
-from random import sample
-from time import time
+from pathlib import Path
+
 import pandas as pd
+
 from ascii_chart import ascii_chart
+from game import play_game
 
-# načti herní statistiky do dataframe
-game_stats = pd.read_csv("game_stats.csv")
+# načti herní statistiky do dataframe, pro sichr použij absolutní cestu
+file_path = Path(__file__).parent.absolute()
+global_stats = pd.read_csv(file_path / "global_game_stats.csv")
 
-# menu
-print("""
+# ---------- STRUKTURA PROGRAMU ----------
+# MAIN MENU
+#  |- NEW GAME
+#  |- STATS
+#      | - RAW DATA
+#      | - NUMBER OF GUESSES
+#      | - TIME TO WIN
+#      | <- MAIN MENU
+#  |- QUIT
+
+MAIN_MENU_TEXT = """
 ----------------------------
        BULLS AND COWS
 ----------------------------       
 1) New Game
-2) Stats - Number of Guesses
-3) Stats - Time To Win
-----------------------------""")
+2) Stats
+3) Quit Game
+----------------------------"""
 
-selection = input(">>> ")
+STAT_MENU_TEXT = """
+       STATS
+----------------------------       
+1) Raw Data
+2) Number of Guesses
+3) Time to win
+4) Main Menu2"""
 
-if selection == "1":
-    # generuj tajné číslo
-    while True:
-        secret_num = [str(item) for item in sample(range(0, 10), 4)]
-        if secret_num[0] != '0':
-            break
+# inicializace validity volby
+selection_invalid = False
 
-    # inicializuj statistiku probíhajíci hry a zaznamenej čas začátku hry
-    current_stats = {"game_id": game_stats["game_id"].max() + 1
-                     if not game_stats.empty else 1,
-                     "n_guesses": 0,
-                     "time_to_win": 0.0}
-    start_time = time()
+while True:
+    # MAIN MENU
+    if not selection_invalid:
+        print(MAIN_MENU_TEXT)
+    main_menu_selection = input(">>> ")
 
-    #
-    print("Enter your guess ('*' to quit):")
-    print(20 * "-")
+    if main_menu_selection in ["1", "2", "3", "4"]:
+        selection_invalid = False
+        # 1) NEW GAME
+        if main_menu_selection == "1":
+            # opakovaně hraj hru dokud to uživatele neomrzí
+            while True:
+                stats = play_game(global_stats)
 
-    while True:
-        counter = {"bull": 0, "cow": 0}
+                if stats:
+                    global_stats = global_stats.append(pd.DataFrame(
+                        stats, columns=global_stats.columns, index=[0]),
+                        ignore_index=True)
 
-        guess = input(">>> ")
-
-        # zkontroluj vstupní hodnoty
-        if guess == "*":
-            print("-game aborted-")
-            break
-        elif not guess.isnumeric():
-            print("Guess must be a number!")
-            continue
-        elif not len(guess) == 4:
-            print("Guessed number must be 4 digits long!")
-            continue
-        elif guess[0] == '0':
-            print("Guessed number must not start with a 0!")
-            continue
-        elif sum([guess.count(dig) for dig in guess]) != 4:
-            print("Each digit must be unique!")
-            continue
-
-        current_stats["n_guesses"] += 1
-
-        # vyhodnoť tip, zapiš do počítadla
-        for i, digit in enumerate(guess):
-            if digit in secret_num:
-                if secret_num[i] == digit:
-                    counter["bull"] += 1
+                print("-" * 20)
+                print("Play again? (1)Yes (0)No")
+                if play_again := input(">>> ") != "1":
+                    global_stats.to_csv(file_path / "global_game_stats.csv",
+                                        index=False)
+        # 2) STATS
+        elif main_menu_selection == "2":
+            while True:
+                if not selection_invalid:
+                    print(STAT_MENU_TEXT)
+                stat_menu_selection = input(">>> ")
+                if stat_menu_selection in ["1", "2", "3", "4"]:
+                    selection_invalid = False
+                    if stat_menu_selection == "1":
+                        print(global_stats)
+                    elif stat_menu_selection == "2":
+                        ascii_chart(data=global_stats, x="n_guesses",
+                                    chart_type="hist",
+                                    precision=0, labels=["GUESSES", "GAMES"],
+                                    sort_by="index")
+                    elif stat_menu_selection == "3":
+                        ascii_chart(data=global_stats, x="time_to_win",
+                                    chart_type="hist",
+                                    precision=-1,
+                                    labels=["TIME TO WIN(s)", "GAMES"],
+                                    sort_by="index")
+                    elif stat_menu_selection == "4":
+                        break
+                    print(20 * "-")
                 else:
-                    counter["cow"] += 1
-
-        # vypiš verdikt
-        verdict = ""
-        for key, value in counter.items():
-            verdict += f"| {value} {key} " \
-                if value == 1 else f"| {value} {key}s "
-        print(verdict)
-
-        if counter["bull"] == 4:
-            current_stats["time_to_win"] = round(time() - start_time, 2)
-            print(f"Great Success!")
-            print(f"Guesses: {current_stats['n_guesses']} "
-                  f"( average: {game_stats['n_guesses'].mean().round(2)} )")
-            print(f"Game time: {current_stats['time_to_win']}s "
-                  f"( average: {game_stats['time_to_win'].mean().round(2)}s )")
-
-            # přidej statistiky poslední hry do DataFrame, ulož do csv
-            # poznámka: Pokud se přidá slovník přímo,
-            # Pandas převede všechny sloupce int na float,
-            # převedením slovníku na Dataframe se tomu zabrání.
-            # Není to pěkné, ale funguje to...
-            game_stats = game_stats.append(pd.DataFrame(
-                current_stats, columns=game_stats.columns, index=[0]),
-                ignore_index=True)
-            game_stats.to_csv("game_stats.csv", index=False)
+                    print("Invalid Selection!")
+                    selection_invalid = True
+        # 3) QUIT
+        elif main_menu_selection == "3":
+            print("Goodbye!")
             break
-
-elif selection == "2":
-    ascii_chart(data=game_stats, x="n_guesses", chart_type="hist",
-                precision=0, labels=["GUESSES", "GAMES"], symbol="#")
-elif selection == "3":
-    ascii_chart(data=game_stats, x="time_to_win", chart_type="hist",
-                precision=-1, labels=["TIME TO WIN(s)", "GAMES"], symbol="#")
-else:
-    print("Invalid Input!")
+    else:
+        print("Invalid Selection!")
+        selection_invalid = True
