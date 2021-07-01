@@ -12,6 +12,17 @@ def add_game_stats(game_stats, glob_stats):
         ignore_index=True)
 
 
+def n_guesses_chart(dataframe):
+    return ascii_chart(data=dataframe, x="n_guesses", chart_type="hist",
+                       precision=0, labels=["GUESSES", "GAMES"],
+                       sort_by="index")
+
+
+def time_to_win_chart(dataframe):
+    return ascii_chart(data=dataframe, x="time_to_win", chart_type="hist",
+                       precision=-1, labels=["TIME TO WIN(s)", "GAMES"],
+                       sort_by="index")
+
 # ---------- STRUKTURA PROGRAMU ----------
 # MAIN MENU
 #  |- NEW GAME
@@ -22,21 +33,10 @@ def add_game_stats(game_stats, glob_stats):
 #      | <- MAIN MENU
 #  |- QUIT
 
+
 # načti herní statistiky do dataframe, pro sichr použij absolutní cestu
 stats_path = Path(__file__).parent.absolute() / "global_game_stats.csv"
 global_stats = pd.read_csv(stats_path)
-
-
-def n_guesses_chart(dataframe):
-    ascii_chart(data=dataframe, x="n_guesses", chart_type="hist",
-                precision=0, labels=["GUESSES", "GAMES"], sort_by="index")
-
-
-def time_to_win_chart(dataframe):
-    ascii_chart(data=dataframe, x="time_to_win", chart_type="hist",
-                precision=-1, labels=["TIME TO WIN(s)", "GAMES"],
-                sort_by="index")
-
 
 MAIN_MENU_TEXT = """
 ----------------------------
@@ -90,9 +90,9 @@ while True:
                 if stat_menu_selection == "1":
                     print(global_stats)
                 elif stat_menu_selection == "2":
-                    n_guesses_chart(global_stats)
+                    print(n_guesses_chart(global_stats))
                 elif stat_menu_selection == "3":
-                    time_to_win_chart(global_stats)
+                    print(time_to_win_chart(global_stats))
                 elif stat_menu_selection == "4":
                     break
                 print(20 * "-")

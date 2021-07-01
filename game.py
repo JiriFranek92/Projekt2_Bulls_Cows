@@ -43,7 +43,7 @@ def check_guess(guess: str, secret_num: list, counter: dict):
 def victory_message(global_stats, game_stats: dict, digits: int):
     """Pogratuluje hráči k vítězství a vypíše statistiky dohrané hry
      a srovnání s globálními průměry."""
-    print(f"Great Success!")
+    print(f"Success!")
     print(f"Guesses: {game_stats['n_guesses']} "
           f"(average: {global_stats['n_guesses'].mean().round(digits)})")
     print(f"Game time: {game_stats['time_to_win']}s "
