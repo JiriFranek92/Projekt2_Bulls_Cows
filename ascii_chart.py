@@ -10,11 +10,11 @@ def print_summary(data, x):
 def validate_inputs(data, labels, chart_type):
     """ Zkontroluje vstupy funkce ascii grafu, vrátí validitu
      a popř chybovou hlášku."""
-    # 'data' je DataFrame
+    # 'data' se dá převést na DataFrame
     if not isinstance(data, pd.DataFrame):
         return False, "Input must be a Pandas DataFrame!"
     # 'labels' je list/tuple o délce 2
-    elif not(isinstance(labels, list) or isinstance(labels, tuple)):
+    elif not(isinstance(labels, (list, tuple))):
         return False, "'labels' argument must be a list or a tupple!"
     # 'chart_type' je validní typ grafu"
     elif chart_type not in ["bar", "hist"]:

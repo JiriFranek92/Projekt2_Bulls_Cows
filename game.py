@@ -1,12 +1,14 @@
 from random import sample
 from time import time
 
+import pandas as pd
+
 
 def generate_secret_num():
     """Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje"""
     while True:
         num = [str(item) for item in sample(range(0, 10), 4)]
-        if num[0] != 0:
+        if num[0] != "0":
             return num
         
 
@@ -59,20 +61,22 @@ def print_verdict(counter: dict):
     print(verdict)
 
 
-def play_game(global_stats):
-    secret_num = generate_secret_num()
-
-    # inicializuj statistiku probíhajíci hry a zaznamenej čas začátku hry
+def initialize_game_stats(global_stats):
     game_stats = {"game_id": global_stats["game_id"].max() + 1
                   if not global_stats.empty else 1,
                   "n_guesses": 0,
                   "time_to_win": 0.0}
-    start_time = time()
+    return game_stats, time()
 
-    #
+
+def play_game(global_stats):
+    secret_num = generate_secret_num()
+
+    # inicializuj statistiku probíhajíci hry a zaznamenej čas začátku hry
+    game_stats, start_time = initialize_game_stats(global_stats)
+
     print("Enter your guess ('*' to quit):")
     print(20 * "-")
-
     while True:
         guess = input(">>> ")
         err_code = validate_guess(guess)
@@ -81,7 +85,7 @@ def play_game(global_stats):
         # pokud je jiná chyba
         if err_code == -1:
             print("-game aborted-")
-            return {}
+            return 1, pd.DataFrame()
         elif err_code > 0:
             continue
 
@@ -97,4 +101,7 @@ def play_game(global_stats):
             game_stats["time_to_win"] = round(time() - start_time, 2)
             victory_message(global_stats, game_stats, 2)
 
-            return game_stats
+            # ukonči a vráť statistiky konvertované na DataFrame
+            # pro zachování datových typů
+            return 0, pd.DataFrame(game_stats, columns=global_stats.columns,
+                                   index=[0])
