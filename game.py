@@ -101,7 +101,7 @@ class BullsAndCows:
             if self._guess == self._abort_key:
                 # pokud je zadán kód pro přerušení, přeruš hru
                 print("-game aborted-")
-                print(f"The number was {self.secret_num}")
+                print(f"The number was {''.join(self.secret_num)}")
                 self.finished = False
                 return
             else:

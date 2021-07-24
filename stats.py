@@ -2,9 +2,6 @@ from pathlib import Path
 from time import time
 
 import pandas as pd
-from tabulate import tabulate
-
-from ascii_chart import Histogram
 
 
 class Stats:
@@ -57,26 +54,6 @@ class Stats:
         """ Vrátí první volné id hry."""
         return self["game_id"].max() + 1 if not self.empty else 1
 
-    @property
-    def n_guesses_chart(self):
-        chart = Histogram(data=self.df, x="n_guesses", precision=0)
-        chart.sort_data(sort_by="index")
-        chart.format(labels=["GUESSES", "GAMES"])
-        return chart
-
-    @property
-    def time_to_win_chart(self):
-        chart = Histogram(data=self.df, x="time_to_win", precision=-1)
-        chart.sort_data(sort_by="index")
-        chart.format(labels=["TIME TO WIN(s)", "GAMES"])
-        return chart
-
-    @property
-    def raw_data(self):
-        return tabulate(self.df, showindex=False, tablefmt="psql",
-                        headers=("Game \nnumber", "Number of \nGuesses",
-                                 "Time to \nwin"))
-
 
 class StatsCounter:
     """ Obal počítadla pomocí slovníku pro hezčí kód."""
@@ -98,7 +75,7 @@ class StatsCounter:
 
     @property
     def df(self):
-        return pd.DataFrame(self.stats, columns=self.global_stats.columns,
+        return pd.DataFrame(self.stats, columns=self.global_stats.df.columns,
                             index=[0])
 
     def __getitem__(self, item):

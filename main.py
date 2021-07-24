@@ -1,65 +1,75 @@
-from pathlib import Path
+import sys
 
-import pandas as pd
+from tabulate import tabulate
 
-from menus import *
+from menu_system import Main, Menu
+from stats import Stats
+from ascii_chart import Histogram
+from game import BullsAndCows
 
 
-# načti herní statistiky do dataframe, pro sichr použij absolutní cestu
-stats_path = Path(__file__).parent.absolute() / "global_game_stats.csv"
-global_stats = pd.read_csv(stats_path)
+def n_guesses_chart():
+    chart = Histogram(data=global_stats.df, x="n_guesses", precision=0)
+    chart.sort_data(sort_by="index")
+    chart.format(labels=["GUESSES", "GAMES"])
+    chart.show()
+    input("...")
 
-# ---------- STRUKTURA PROGRAMU ----------
-# MAIN MENU
-#  |- NEW GAME
-#  |- STATS
-#      | - RAW DATA
-#      | - NUMBER OF GUESSES
-#      | - TIME TO WIN
-#      | <- MAIN MENU
-#  |- QUIT
 
-# inicializace validity volby
-selection_invalid = False
+def time_to_win_chart():
+    chart = Histogram(data=global_stats.df, x="time_to_win", precision=-1)
+    chart.sort_data(sort_by="index")
+    chart.format(labels=["TIME TO WIN(s)", "GAMES"])
+    chart.show()
+    input("...")
 
-while True:
-    # MAIN MENU
-    if not selection_invalid:
-        print_menu(main_menu)
-    main_menu_selection = input(">>> ")
 
-    if main_menu_selection in ["1", "2", "3", "4"]:
-        selection_invalid = False
-        # 1) NEW GAME
-        # opakovaně hraj hru dokud to uživatele neomrzí
-        while main_menu_selection == "1":
-            play_again, global_stats = game_loop(global_stats, stats_path)
-            if play_again != "1":
-                break
-        # 2) STATS
-        while main_menu_selection == "2":
-            if not selection_invalid:
-                print_menu(stats_menu)
-            stat_menu_selection = input(">>> ")
+def raw_data():
+    print(tabulate(global_stats.df, showindex=False, tablefmt="psql",
+                   headers=("Game \nnumber", "Number of \nGuesses",
+                            "Time to \nwin")))
+    input("...")
 
-            if stat_menu_selection in ["1", "2", "3", "4"]:
-                selection_invalid = False
-                if stat_menu_selection == "1":
-                    print(raw_data(global_stats))
-                elif stat_menu_selection == "2":
-                    print(n_guesses_chart(global_stats))
-                elif stat_menu_selection == "3":
-                    print(time_to_win_chart(global_stats))
-                elif stat_menu_selection == "4":
-                    break
-                print(20 * "-")
-            else:
-                print("Invalid Selection!")
-                selection_invalid = True
-        # 3) QUIT
-        if main_menu_selection == "3":
-            print("Goodbye!")
+
+def quit_game():
+    print("Thanks for playing")
+    sys.exit(0)
+
+
+def game_loop():
+    while True:
+        game = BullsAndCows(global_stats)
+        game.play()
+
+        if game.finished:
+            global_stats.add(game.game_stats)
+
+        print("-" * 20)
+        print("Play again? (1)Yes (0)No")
+        again = input(">>> ")
+        if again != "1":
             break
-    else:
-        print("Invalid Selection!")
-        selection_invalid = True
+
+
+def main():
+    global global_stats
+    global_stats = Stats("global_game_stats.csv")
+
+    main_menu = Menu("BULLS AND COWS", sep_symbol="=")
+    stats_menu = Menu("STATISTICS")
+
+    main_menu.add_item(1, "New Game", func=game_loop)
+    main_menu.add_item(2, "Stats", menu=stats_menu)
+    main_menu.add_item(3, "Quit Game", func=quit_game)
+    # main_menu.show()
+
+    stats_menu.add_item(1, "Raw Data", func=raw_data)
+    stats_menu.add_item(2, "Number of Guesses", func=n_guesses_chart)
+    stats_menu.add_item(3, "Time to win", func=time_to_win_chart)
+    stats_menu.add_item(4, "Main Menu", menu=main_menu)
+
+    Main(main_menu)()
+
+
+if __name__ == "__main__":
+    main()
