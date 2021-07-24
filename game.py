@@ -3,13 +3,25 @@ from random import sample
 from stats import Stats, StatsCounter
 
 
+class Error:
+    def __init__(self, condition, message):
+        self.condition = condition
+        self.message = message
+
+
 class BullsAndCows:
     def __init__(self, global_stats):
         self.global_stats = global_stats
 
         self.game_stats = StatsCounter(self.global_stats)
-        self.secret_num = self.__generate_secret_num()
+        self.secret_num = self._generate_secret_num()
         self.finished = False
+
+        # interní atributy
+        self._guess = None
+        self._found_errors = []
+        self._abort_key = "*"
+        self._bc_counter = dict(bull=0, cow=0)
 
     @property
     def global_stats(self):
@@ -24,53 +36,50 @@ class BullsAndCows:
             self._global_stats = obj
 
     @staticmethod
-    def __generate_secret_num():
+    def _generate_secret_num():
         """Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje"""
         while True:
             num = [str(item) for item in sample(range(0, 10), 4)]
             if num[0] != "0":
                 return num
 
-    @staticmethod
-    def __validate_guess(guess: str) -> int:
-        """Zkontroluje validitu hádaného čísla, vrátí chybový kód"""
-        if guess == "*":
-            return -1
-        elif not guess.isnumeric():
-            print("Guess must be a number!")
-            return 1
-        elif not len(guess) == 4:
-            print("Guessed number must be 4 digits long!")
-            return 2
-        elif guess[0] == '0':
-            print("Guessed number must not start with a 0!")
-            return 3
-        elif sum([guess.count(dig) for dig in guess]) != 4:
-            print("Each digit must be unique!")
-            return 4
-        else:
-            return 0
+    def _validate_guess(self):
+        """Zkontroluje validitu hádaného čísla, zaznamená chyby"""
+        errors = [Error(not self._guess.isnumeric(),
+                        "Guess must be a number!"),
+                  Error(len(self._guess) != 4,
+                        "Guessed number must be 4 digits long!"),
+                  Error(self._guess[0] == '0',
+                        "Guessed number must not start with a 0!"),
+                  Error(len(self._guess) != len(set(self._guess)),
+                        "Each digit must be unique!")]
 
-    @staticmethod
-    def __check_guess(guess: str, secret_num: list, counter: dict):
+        self._found_errors = []
+
+        for error in errors:
+            if error.condition is True:
+                self._found_errors.append(error)
+
+    def _check_guess(self):
         """Vyhodnotí hádané číslo, zapíše do počítadla"""
-        for i, digit in enumerate(guess):
-            if digit in secret_num:
-                if secret_num[i] == digit:
-                    counter["bull"] += 1
-                else:
-                    counter["cow"] += 1
+        self._bc_counter = dict(bull=0, cow=0)
 
-    @staticmethod
-    def __print_verdict(counter: dict):
+        for i, digit in enumerate(self._guess):
+            if digit in self.secret_num:
+                if digit == self.secret_num[i]:
+                    self._bc_counter["bull"] += 1
+                else:
+                    self._bc_counter["cow"] += 1
+
+    def _print_verdict(self):
         """Projde počítadlo, vytvoří verdikt se správnými množnými čísly,
          vypíše ho."""
         verdict = ""
-        for key, value in counter.items():
-            verdict += f"| {value} {key} " if value == 1 else f"| {value} {key}s "
+        for key, val in self._bc_counter.items():
+            verdict += f"| {val} {key} " if val == 1 else f"| {val} {key}s "
         print(verdict)
 
-    def __victory_message(self, digits=2):
+    def _victory_message(self, digits=2):
         """Pogratuluje hráči k vítězství a vypíše statistiky dohrané hry
          a srovnání s globálními průměry."""
         print(f"Success!")
@@ -84,32 +93,37 @@ class BullsAndCows:
     def play(self):
         self.game_stats.start_timer()
 
-        print("Enter your guess ('*' to quit):")
+        print(f"Enter your guess ('{self._abort_key}' to quit):")
         print(20 * "-")
         while True:
-            guess = input(">>> ")
-            err_code = self.__validate_guess(guess)
+            self._guess = input(">>> ")
 
-            # pokud je chybový kód -1, přeruš hru
-            # pokud je jiná chyba, znovu se zeptej na číslo
-            if err_code == -1:
+            if self._guess == self._abort_key:
+                # pokud je zadán kód pro přerušení, přeruš hru
                 print("-game aborted-")
                 print(f"The number was {self.secret_num}")
                 self.finished = False
                 return
-            elif err_code > 0:
-                continue
             else:
-                self.game_stats.count_guess()
+                # jinak zkontroluj validitu
+                self._validate_guess()
+                if self._found_errors:
+                    # pokud jsou nalezeny chyby, vypiš je a pokračuj na další
+                    # iteraci
+                    print("\n".join(
+                        [err.message for err in self._found_errors]))
+                    continue
+                else:
+                    # jinak připočítej hádání
+                    self.game_stats.count_guess()
 
             # vyhodnoť tip, vypiš verdikt
-            counter = {"bull": 0, "cow": 0}
-            self.__check_guess(guess, self.secret_num, counter)
-            self.__print_verdict(counter)
+            self._check_guess()
+            self._print_verdict()
 
             # pokud hráč uhodl, zapiš čas hraní, vypiš gratulaci a statistiky
-            if counter["bull"] == 4:
+            if self._bc_counter["bull"] == 4:
                 self.game_stats.mark_time()
-                self.__victory_message()
+                self._victory_message()
                 self.finished = True
                 return
