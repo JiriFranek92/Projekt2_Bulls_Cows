@@ -1,24 +1,38 @@
-from tabulate import tabulate
-
-# from ascii_chart import ascii_chart
-# from game import play_game
-
 from os import system, name
 
 
-# clear function
 def clear():
-    # for windows
+    """Vyčistí konzoli."""
+    # windows
     if name == 'nt':
         _ = system('cls')
-    # for mac and linux(here, os.name is 'posix')
+    # mac a linux
     else:
         _ = system('clear')
 
 
 class Main:
-    def __init__(self, main_menu):
+    """Hlavní třída systému menu.
+
+    Po zavolání spustí nekonečnou smyčku, která:
+        - vypíše menu (pokud uživatel zadal validní volbu v minulé iteraci)
+        - přijme volbu od uživatele
+        - pokud byla volba validní, zavolá zvolenou položku menu a nastaví,
+          které menu se má spustit při další iteraci.
+
+    Smyčka se ukončí zadáním řetězce pro přerušení. Případně lze ukončit celý
+    program vlastní funkcí zavolanou položkou v menu.
+
+    Atributy:
+        menu: menu, které se má zobrazit
+        break_string: string, kterým se přeruší program.
+        is_selection_valid: bool, jestli uživatel zadal validní volbu
+    """
+
+    def __init__(self, main_menu, break_string="*"):
         self.menu = main_menu
+        self.break_string = break_string
+
         self.is_selection_valid = True
 
     @property
@@ -41,7 +55,7 @@ class Main:
             try:
                 self.menu = self.menu[sel]()
             except KeyError:
-                if sel == "*":
+                if sel == self.break_string:
                     break
                 print(f"'{sel}' is not a valid selection!")
                 self.is_selection_valid = False
@@ -50,6 +64,17 @@ class Main:
 
 
 class Menu:
+    """Menu pomocí příkazového řádku.
+
+    Atributy:
+        title: název menu
+        items:
+            slovník položek menu, hodnoty jsou instance třídy MenuItem,
+            klíče jsou řetězce pro spuštění položky
+        sep.symbol: symbol který odděluje název od položek
+        width: šířka menu (ovlivňuje pouze titulek a oddělovač)
+    """
+
     def __init__(self, title="", width=30, sep_symbol="-"):
         self.title = str(title)
         self.items = {}
@@ -73,15 +98,31 @@ class Menu:
 
     @width.setter
     def width(self, value):
-        # nastav zadaná šířka jen pokud je větší než délka titulku menu,
-        # jinak nastav rovnou délce titulku
+        # šířka musí být delší než délka titulku
         self._width = len(self.title) if value < len(self.title) else value
 
-    def add_item(self, id, name="", func=None, menu=None):
+    def add_item(self, call_string, item_name="", func=None, menu=None):
+        """Vytvoří položku menu a přidá do slovníku.
+
+        Argumenty:
+            call_string: řetězec, kterým uživatel volí položku
+            func: funkce, kterou má položka zavolat
+            menu: menu, na které má položka přejít
+        """
         menu = menu if menu is not None else self
-        self.items[str(id)] = MenuItem(name, func, menu)
+        self.items[str(call_string)] = _MenuItem(item_name, func, menu)
 
     def __str__(self):
+        """Vrací string pro vypsání menu.
+
+        Menu může vypadat takto:
+        ---------
+           MENU
+        ---------
+        1) položka 1
+        něco) položka 2
+        #) položka 3
+        """
         sep = self.sep_symbol * self.width
         out = [sep, f"{self.title: ^{self.width}}", sep]
 
@@ -90,12 +131,24 @@ class Menu:
         return "\n".join(out)
 
     def __getitem__(self, key):
+        """instance_menu.items["a"] -> instance_menu["a"]"""
         return self.items[key]
 
 
-class MenuItem:
-    def __init__(self, name, func, menu):
-        self.name = str(name)
+class _MenuItem:
+    """Položka menu.
+
+    Interní třída. Mělo by se s ní pracovat pouze pomocí metod třídy Menu.
+
+    Atributy:
+        name: název položky
+        func: funkce, kterou má položka zavolat
+        menu: menu, do kterého má položka přepnout
+    """
+
+    def __init__(self, item_name, func, menu):
+        """Vytvoří položku menu."""
+        self.name = str(item_name)
         self.func = func
         self.menu = menu
 
@@ -105,6 +158,7 @@ class MenuItem:
 
     @func.setter
     def func(self, value):
+        """Při přiřazení zajistí, že atribut func je volatelný nebo None."""
         if not (callable(value) or value is None):
             raise TypeError("'func' must be a function!")
         else:
@@ -116,71 +170,14 @@ class MenuItem:
 
     @menu.setter
     def menu(self, value):
+        """Zajistí, že menu je instance třídy Menu."""
         if not isinstance(value, Menu):
             raise TypeError("'menu' must be a Menu class!")
         else:
             self._menu = value
 
     def __call__(self):
+        """Pří zavolání instance zavolá funkci func a vrátí menu."""
         if self.func is not None:
             self.func()
         return self.menu
-
-
-def print_menu(menu, width=30, symbol="-"):
-    sep = width * symbol
-    print(sep)
-    print(f"{menu['title']: ^{width}}")
-    print(sep)
-
-    for key, item in menu["items"].items():
-        print(f"{key}) {item}")
-
-    print(sep)
-
-
-def game_loop(glob_stats, stats_path):
-    exit_code, stats = play_game(glob_stats)
-
-    if exit_code == 0:
-        new_stats = glob_stats.append(stats, ignore_index=True)
-        stats.to_csv(stats_path, index=False, header=False, mode="a")
-    else:
-        new_stats = glob_stats
-
-    print("-" * 20)
-    print("Play again? (1)Yes (0)No")
-    again = input(">>> ")
-    return again, new_stats
-
-
-# ---------------------- Funkce menu statistik --------------------------------
-def raw_data(dataframe):
-    return tabulate(dataframe, showindex=False, tablefmt="psql",
-                    headers=("Game \nnumber", "Number of \nGuesses",
-                             "Time to \nwin"))
-
-
-def n_guesses_chart(dataframe):
-    return ascii_chart(data=dataframe, x="n_guesses", chart_type="hist",
-                       precision=0, labels=["GUESSES", "GAMES"],
-                       sort_by="index")
-
-
-def time_to_win_chart(dataframe):
-    return ascii_chart(data=dataframe, x="time_to_win", chart_type="hist",
-                       precision=-1, labels=["TIME TO WIN(s)", "GAMES"],
-                       sort_by="index")
-
-
-main_menu = {"title": "BULLS AND COWS",
-             "items": {1: "New Game",
-                       2: "Stats",
-                       3: "Quit Game"}}
-
-stats_menu = {"title": "STATS",
-              "items": {1: "Raw Data",
-                        2: "Number of Guesses",
-                        3: "Time to win",
-                        4: "Main Menu"}}
-

@@ -9,12 +9,20 @@ class Error:
         self.message = message
 
 
+def _generate_secret_num():
+    """Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje"""
+    while True:
+        num = [str(item) for item in sample(range(0, 10), 4)]
+        if num[0] != "0":
+            return num
+
+
 class BullsAndCows:
-    def __init__(self, global_stats):
+    def __init__(self, global_stats=None):
         self.global_stats = global_stats
 
         self.game_stats = StatsCounter(self.global_stats)
-        self.secret_num = self._generate_secret_num()
+        self.secret_num = _generate_secret_num()
         self.finished = False
 
         # interní atributy
@@ -29,19 +37,11 @@ class BullsAndCows:
 
     @global_stats.setter
     def global_stats(self, obj):
-        if not isinstance(obj, Stats):
+        if obj is not None and not isinstance(obj, Stats):
             raise TypeError(
                 "'global_stats' must be an instance of 'Stats' class!")
         else:
             self._global_stats = obj
-
-    @staticmethod
-    def _generate_secret_num():
-        """Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje"""
-        while True:
-            num = [str(item) for item in sample(range(0, 10), 4)]
-            if num[0] != "0":
-                return num
 
     def _validate_guess(self):
         """Zkontroluje validitu hádaného čísla, zaznamená chyby"""
@@ -81,14 +81,20 @@ class BullsAndCows:
 
     def _victory_message(self, digits=2):
         """Pogratuluje hráči k vítězství a vypíše statistiky dohrané hry
-         a srovnání s globálními průměry."""
+         a srovnání s globálními průměry pokud jsou k dispozici."""
+        str_guesses = f"Guesses: {self.game_stats['n_guesses']}"
+        str_mean_guesses = "" if self.global_stats is None else (
+            f"(average: ",
+            f"{self.global_stats['n_guesses'].mean().round(digits)})")
+
+        str_time = f"Game time: {self.game_stats['time_to_win']}s "
+        str_mean_time = "" if self.global_stats is None else (
+            f"(average: ",
+            f"{self.global_stats['time_to_win'].mean().round(digits)}s)")
+
         print(f"Success!")
-        print(f"Guesses: {self.game_stats['n_guesses']} "
-              f"(average: "
-              f"{self.global_stats['n_guesses'].mean().round(digits)})")
-        print(f"Game time: {self.game_stats['time_to_win']}s "
-              f"(average: "
-              f"{self.global_stats['time_to_win'].mean().round(digits)}s)")
+        print(f"{str_guesses} {str_mean_guesses}")
+        print(f"{str_time} {str_mean_time}")
 
     def play(self):
         self.game_stats.start_timer()
@@ -117,13 +123,20 @@ class BullsAndCows:
                     # jinak připočítej hádání
                     self.game_stats.count_guess()
 
-            # vyhodnoť tip, vypiš verdikt
             self._check_guess()
             self._print_verdict()
 
-            # pokud hráč uhodl, zapiš čas hraní, vypiš gratulaci a statistiky
             if self._bc_counter["bull"] == 4:
                 self.game_stats.mark_time()
                 self._victory_message()
                 self.finished = True
                 return
+
+
+def main():
+    game = BullsAndCows()
+    game.play()
+
+
+if __name__ == "__main__":
+    main()

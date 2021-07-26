@@ -2,7 +2,7 @@ import sys
 
 from tabulate import tabulate
 
-from menu_system import Main, Menu
+from menu_system import Main, Menu, clear
 from stats import Stats
 from ascii_chart import Histogram
 from game import BullsAndCows
@@ -38,6 +38,7 @@ def quit_game():
 
 def game_loop():
     while True:
+        clear()
         game = BullsAndCows(global_stats)
         game.play()
 
@@ -52,6 +53,7 @@ def game_loop():
 
 
 def main():
+    # noinspection PyGlobalUndefined
     global global_stats
     global_stats = Stats("global_game_stats.csv")
 

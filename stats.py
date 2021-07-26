@@ -4,27 +4,26 @@ from time import time
 import pandas as pd
 
 
+def _get_path(filename):
+    # vrátí absolutní cestu
+    path = Path(__file__).parent.absolute() / filename
+    return path
+
+
 class Stats:
     df_template = pd.DataFrame({"game_id": [],
                                 "n_guesses": [],
                                 "time_to_win": []})
 
     def __init__(self, filename):
-        self.path = self.__get_path(filename)
+        self.path = _get_path(filename)
         self.df = pd.read_csv(self.path)
         self.__validate_df()
 
     @staticmethod
-    def __get_path(filename):
-        # pokud soubor nemá relativní cestu, tak ji vytvoř
-        path = Path(filename)
-        if not path.is_absolute():
-            Path(__file__).parent.absolute() / filename
-        return path
-
-    @staticmethod
     def __import(self, path):
         # TODO: co dělat pokud soubor neexistuje
+
         return pd.read_csv(path)
 
     def __validate_df(self):
@@ -59,7 +58,8 @@ class StatsCounter:
     """ Obal počítadla pomocí slovníku pro hezčí kód."""
     def __init__(self, global_stats):
         self.global_stats = global_stats
-        self.stats = {"game_id": global_stats.next_id,
+        game_id = 0 if global_stats is None else global_stats.next_id
+        self.stats = {"game_id": game_id,
                       "n_guesses": 0,
                       "time_to_win": 0.0}
 

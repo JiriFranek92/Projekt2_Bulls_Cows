@@ -1,9 +1,21 @@
 import pandas as pd
 
 
+def _get_col(data, x):
+    # validuje dataframe inicializované instance
+    # vrátí sloupec daný parametrem x
+    if not isinstance(data, pd.DataFrame):
+        raise TypeError("Input must be a Pandas DataFrame!")
+    else:
+        try:
+            return data[x]
+        except KeyError:
+            raise KeyError(f"No column '{x}' in '{data}' DataFrame.")
+
+
 class AsciiChart:
     def __init__(self, data, x):
-        self.col = self._get_col(data, x)
+        self.col = _get_col(data, x)
         self.chart_data = self._get_chart_data()
 
         self.labels = [x, 'COUNT']
@@ -51,18 +63,6 @@ class AsciiChart:
                 print("Invalid setting: 'max_symbols' not greater than 0!")
             else:
                 self._max_symbols = value
-
-    @staticmethod
-    def _get_col(data, x):
-        # validuje dataframe inicializované instance
-        # vrátí sloupec daný parametrem x
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError("Input must be a Pandas DataFrame!")
-        else:
-            try:
-                return data[x]
-            except KeyError:
-                raise KeyError(f"No column '{x}' in '{data}' DataFrame.")
 
     def _get_chart_data(self):
         """ Vrátí data pro graf. U základní třídy přímo vybraný sloupec.
