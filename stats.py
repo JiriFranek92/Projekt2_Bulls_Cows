@@ -5,30 +5,69 @@ import pandas as pd
 
 
 def _get_path(filename):
-    # vrátí absolutní cestu
+    # vrátí absolutní cestu souboru (v pracovní složce programu)
     path = Path(__file__).parent.absolute() / filename
     return path
 
 
 class Stats:
-    df_template = pd.DataFrame({"game_id": [],
-                                "n_guesses": [],
-                                "time_to_win": []})
+    df_columns = "game_id", "n_guesses", "time_to_win"
 
     def __init__(self, filename):
         self.path = _get_path(filename)
-        self.df = pd.read_csv(self.path)
-        self.__validate_df()
 
-    @staticmethod
-    def __import(self, path):
-        # TODO: co dělat pokud soubor neexistuje
+        self.valid = True
+        self.errors = []
 
-        return pd.read_csv(path)
+        self.df = self.__import_df(self.path)
+        if self.df is not None:
+            self.__validate_df()
+        if self.valid:
+            self.__manage_invalid_values()
+
+    def __import_df(self, path):
+        try:
+            df = pd.read_csv(path)
+        except FileNotFoundError:
+            self.valid = False
+            self.errors.append(
+                f"Stats import failed! File '{path}' does not exist!")
+        except pd.errors.ParserError:
+            self.valid = False
+            self.errors.append(f"Stats import failed! Bad lines in file!")
+        else:
+            return df
 
     def __validate_df(self):
-        # TODO: validace importovaných statistik
-        pass
+        if set(Stats.df_columns).issubset(self.df.columns):
+            self.df = self.df[list(Stats.df_columns)]
+        else:
+            self.valid = False
+            missing_columns = set(Stats.df_columns) - set(self.df.columns)
+            self.errors.append(
+                f"Stats validation Error!"
+                f" Column(s) {missing_columns} are missing!")
+
+    def __manage_invalid_values(self):
+        for col in self.df.columns:
+            self.df[col] = pd.to_numeric(self.df[col], errors='coerce')
+        row_count = len(self.df)
+        self.df = self.df.dropna(axis=0)
+        invalid_row_count = row_count - len(self.df)
+        self.errors.append(
+            f"Warning! Removed {invalid_row_count} rows with wrong data type"
+            f" from global stats")
+
+        for col in ['game_id', 'n_guesses']:
+            self.df[col] = self.df[col].astype(int)
+
+        valid_rows = ((self.df["n_guesses"] > 0) & (self.df["game_id"] > 0)
+                      & (self.df["time_to_win"] > 0))
+        invalid_row_count = len(self.df) - sum(valid_rows)
+        self.df = self.df[valid_rows]
+        self.errors.append(
+            f"Warning! Removed {invalid_row_count} rows with invalid values"
+            f" from global stats")
 
     def add(self, new_stats):
         if not isinstance(new_stats, StatsCounter):

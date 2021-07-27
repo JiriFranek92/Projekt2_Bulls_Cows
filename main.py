@@ -39,10 +39,10 @@ def quit_game():
 def game_loop():
     while True:
         clear()
-        game = BullsAndCows(global_stats)
+        game = BullsAndCows(global_stats if global_stats.valid else None)
         game.play()
 
-        if game.finished:
+        if game.finished and global_stats.valid:
             global_stats.add(game.game_stats)
 
         print("-" * 20)
@@ -52,11 +52,7 @@ def game_loop():
             break
 
 
-def main():
-    # noinspection PyGlobalUndefined
-    global global_stats
-    global_stats = Stats("global_game_stats.csv")
-
+def create_menus():
     main_menu = Menu("BULLS AND COWS", sep_symbol="=")
     stats_menu = Menu("STATISTICS")
 
@@ -69,6 +65,18 @@ def main():
     stats_menu.add_item(2, "Number of Guesses", func=n_guesses_chart)
     stats_menu.add_item(3, "Time to win", func=time_to_win_chart)
     stats_menu.add_item(4, "Main Menu", menu=main_menu)
+
+    return main_menu, stats_menu
+
+
+def main():
+    main_menu, stats_menu = create_menus()
+
+    # noinspection PyGlobalUndefined
+    global global_stats
+    global_stats = Stats("bad_stats.csv")
+    if global_stats.errors:
+        print("\n".join(global_stats.errors))
 
     Main(main_menu)()
 
