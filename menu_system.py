@@ -49,7 +49,6 @@ class Main:
     def __call__(self):
         while True:
             if self.is_selection_valid:
-                clear()
                 print(self.menu)
             sel = input(">>> ")
             try:
@@ -61,6 +60,7 @@ class Main:
                 self.is_selection_valid = False
             else:
                 self.is_selection_valid = True
+                clear()
 
 
 class Menu:

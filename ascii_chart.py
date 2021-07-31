@@ -14,7 +14,24 @@ def _get_col(data, x):
 
 
 class AsciiChart:
+    """Sloupcový graf vytvořený pomocí ASCII znaků.
+
+    Atributy:
+        col: Series, zdrojový sloupec dat pro graf
+        chart_data:
+            Series, data která má graf znázornit
+            (pro základní třídu přímo zdrojová data)
+        labels: list/tuple text záhlaví grafu
+        symbol: symbol, kterým se mají vykreslit sloupce
+        max_symbols: integer, maximální počet symbolů = max délka sloupce"""
+
     def __init__(self, data, x):
+        """Vytvoří instanci grafu ze zadaných dat.
+
+        Argumenty:
+            data: DataFrame, zdroj dat.
+            x: string, název zvoleného sloupce."""
+
         self.col = _get_col(data, x)
         self.chart_data = self._get_chart_data()
 
@@ -29,9 +46,10 @@ class AsciiChart:
     @labels.setter
     def labels(self, value):
         if not isinstance(value, (list, tuple)):
-            print("Invalid setting: 'labels' must be a list or a tuple!")
+            raise TypeError(
+                "Invalid setting: 'labels' must be a list or a tuple!")
         elif len(value) != 2:
-            print("Invalid setting: 'labels' must be of length 2!")
+            raise TypeError("Invalid setting: 'labels' must be of length 2!")
         else:
             self._labels = value
 
@@ -42,11 +60,12 @@ class AsciiChart:
     @symbol.setter
     def symbol(self, value):
         try:
-            str(value)
+            value_str = str(value)
         except TypeError:
-            print("Invalid setting: 'symbol' not convertible to a string!")
+            raise TypeError(
+                "Invalid setting: 'symbol' not convertible to a string!")
         else:
-            self._symbol = value
+            self._symbol = value_str
 
     @property
     def max_symbols(self):
@@ -55,18 +74,19 @@ class AsciiChart:
     @max_symbols.setter
     def max_symbols(self, value):
         try:
-            value = int(value)
+            value_int = int(value)
         except TypeError:
-            print("Invalid setting: 'max_symbols' not an integer!")
+            raise TypeError("Invalid setting: 'max_symbols' not an integer!")
         else:
-            if value < 1:
-                print("Invalid setting: 'max_symbols' not greater than 0!")
+            if value_int < 1:
+                raise ValueError(
+                    "Invalid setting: 'max_symbols' not greater than 0!")
             else:
-                self._max_symbols = value
+                self._max_symbols = value_int
 
     def _get_chart_data(self):
-        """ Vrátí data pro graf. U základní třídy přímo vybraný sloupec.
-         Funkce překrytá u potomků BarChart a Histogram."""
+        # Vrátí data pro graf. U základní třídy přímo vybraný sloupec.
+        # Funkce překrytá u potomků BarChart a Histogram.
         return self.col
 
     def _get_label_col_width(self):
@@ -126,32 +146,63 @@ class AsciiChart:
                 f"Max: {self.col.max()}")
 
     def sort_data(self, sort_by="values", asc=True):
-        """ Seřadí data pro graf."""
+        """Seřadí data pro graf.
+
+        Argumenty:
+            sort_by: Pokud 'index' řaď podle indexu, jinak podle hodnot.
+            asc: Bool, jesli řadit vzestupně, jinak sestupně."""
         if sort_by == "index":
             self.chart_data = self.chart_data.sort_index(ascending=asc)
         else:
             self.chart_data = self.chart_data.sort_values(ascending=asc)
 
     def format(self, **kwargs):
-        """ Změní proměnné na formátování grafu """
+        """Změní proměnné na formátování grafu.
+
+        Argumenty:
+            kwargs: Formátovací proměnné a jejich honoty.
+
+        Vyvolává:
+            TypeError: Chybné typy formátovacích proměnných.
+        """
         allowed = {"labels", "symbol", "max_symbols"}
         for k, v in kwargs.items():
             if k in allowed:
                 setattr(self, k, v)
 
     def show(self):
-        """ Vytiskne graf a deskriptivní statistiky """
+        """ Vytiskne graf a deskriptivní statistiky."""
         self._print_chart()
         self._print_summary()
 
 
 class BarChart(AsciiChart):
+    """Sloupcový graf počtu hodnot vytvořený pomocí ASCII znaků.
+
+    Atributy:
+        Viz rodičovská třída AsciiChart."""
     def _get_chart_data(self):
-        """ Vrátí data pro graf: počty hodnot ve sloupci"""
+        # Vrátí data pro graf:
+        # Unikátní hodnoty ve zdrojovém sloupci a jejich počet
         self.chart_data = self.col.value_counts()
 
 
 class Histogram(AsciiChart):
+    """Histogram vytvořený pomocí ASCII znaků.
+
+    Atributy:
+        col, labels, symbol, max_symbols:
+            Viz rodičovská třída AsciiChart.
+        chart_data:
+            Series, data která má graf znázornit
+            (pro histogram zdrojová data rozdělená do tříd a jejich počet)
+        n: Integer, počet tříd
+        binwidth: Šířka třídy (přibližná)
+        precision:
+            Počet míst na které se mají hranice tříd zaokrouhlit.
+            Záporný počet zančí zaokrouhlování na desítky, stovky ...
+        """
+
     def __init__(self, data, x, n=10, binwidth=None, precision=3):
         """Inicializuje jako u základní třídy + parametry pro histogram."""
         self.n = n
@@ -160,12 +211,59 @@ class Histogram(AsciiChart):
         
         AsciiChart.__init__(self, data, x)
 
+    @property
+    def n(self):
+        return self._n
+
+    @n.setter
+    def n(self, value):
+        try:
+            value_int = int(value)
+        except TypeError:
+            raise TypeError("'n' must be an Integer!")
+        else:
+            if value_int < 1:
+                raise ValueError("'n' must be greater than 0!")
+            else:
+                self._n = value_int
+
+    @property
+    def binwidth(self):
+        return self._binwidth
+
+    @binwidth.setter
+    def binwidth(self, value):
+        try:
+            value_float = float(value)
+        except TypeError:
+            raise TypeError("'binwidth' must be a number!")
+        else:
+            if value_float < 1:
+                raise ValueError("'binwidth' must be greater than 0!")
+            else:
+                self._binwidth = value_float
+
+    @property
+    def precision(self):
+        return self._precision
+
+    @precision.setter
+    def precision(self, value):
+        try:
+            int(value)
+        except TypeError:
+            raise TypeError("'precision' must be an Integer.")
+        else:
+            self._precision = int(value)
+
     def _get_chart_data(self):
-        """ Vrátí data pro graf: sloupec rozdělený do tříd podle počtu,
-        nebo (přibližné) šíře.
-        Hranice tříd zaokrouhlena podle zadané přesnosti. """
+        # Vrátí data pro graf:
+        # hodnoty zdrojového sloupce rozdělené do 'n' tříd,
+        # nebo podle (přibližné) šíře 'binwidth'.
+        # Hranice tříd jou zaokrouhleny podle zadané přesnosti."""
         if self.binwidth is not None:
-            self.n = int((self.col.max() - self.col.min()) //
-                         self.binwidth + 1)
+            data_range = self.col.max() - self.col.min()
+            self.n = (1 if self.binwidth >= data_range
+                      else data_range // self.binwidth + 1)
         return pd.cut(self.col, self.n, precision=self.precision).\
             value_counts()
