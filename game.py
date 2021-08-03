@@ -1,3 +1,19 @@
+"""Modul pro hru Bulls and Cows.
+
+Vyžaduje modul 'stats'. Obsahuje jedinou třídu BullsAndCows.
+Samostatně spustitelný (pouze bez použítí globálních statistik).
+
+    Typické použití:
+
+    game = BullsAndCows(global_stats)  # inicializace s glob. statistikami
+    game.play()
+
+    # zápis do globáních statistik
+    if game.won:
+        global_stats.add(game.game_stats)
+"""
+
+
 from random import sample
 
 from stats import Stats, StatsCounter
@@ -10,7 +26,7 @@ class Error:
 
 
 def _generate_secret_num():
-    """Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje"""
+    # Vytvoří čtyřciferné tajné číslo, kde se žádná cifra neopakuje
     while True:
         num = [str(item) for item in sample(range(0, 10), 4)]
         if num[0] != "0":

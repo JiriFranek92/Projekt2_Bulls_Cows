@@ -1,3 +1,32 @@
+"""Modul na tvorbu dynamického systému menu v příkazovém řádku.
+
+Systém tvoří tři třídy:
+    - Třída Main zařizuje vypisování menu, dotazy na vstup uživatele a aktivaci
+    zvolených položek.
+    - Třída Menu definuje jednotlivá menu, které tvoří název a položky
+    (plus znaky, které je aktivují).
+    - Třída MenuItem definuje položku. Každá položka má kromě názvu funkci,
+    kterou má spustit, menu do kterého má přepnout, nebo obojí.
+
+    Menu mají pouze implicitní hiearchii. Při použití se nejprve vytvoří menu,
+    poté se přidají položky, nakonec se vytvoří a spustí Main.
+
+    Typické použítí:
+    # definice menu
+    main_menu = Menu("MAIN", sep_symbol="=")
+    sub_menu = Menu("SUBMENU")
+
+    # přidání položek
+    main_menu.add_item(1, "Sub-Menu", menu=sub_menu)
+    main_menu.add_item("q", "Quit Game", func=quit)
+
+    sub_menu.add_item(1, "Function", func=my_function)
+    sub_menu.add_item("x", "Back to Main", menu=main_menu)
+
+    Main(main_menu)()  # spustí systém v zadaném menu
+"""
+
+
 from os import system, name
 
 

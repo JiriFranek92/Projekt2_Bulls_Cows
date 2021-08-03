@@ -1,3 +1,21 @@
+"""Modul pro práci se statistikami Bulls and Cows.
+
+Stats pracuje s globálními statistikami.
+StatsCounter je počítadlo pro jednotlivé hry.
+
+    Typické použití:
+
+    global_stats = Stats("global_stats.csv")
+    game_stats = StatsCounter(global_stats)
+
+    game_stats.start_timer()  # spuštění časovače
+    game_stats.count_guess()  # započtení pokusu
+    ...
+    game_stats.mark_time()  # zaznamenání času
+
+    global_stats.add(game_stats)  # přidání do globálních statistik
+"""
+
 from pathlib import Path
 from time import time
 

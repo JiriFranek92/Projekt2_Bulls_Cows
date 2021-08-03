@@ -1,3 +1,18 @@
+"""Modul na tvorbu ASCII sloupcových grafů z dat v sloupci Pandas dataframe.
+
+Modul obsahuje tři typy grafů. AsciiChart přímo zobrazí data ve sloupci.
+BarChart je graf četností unikátních hodnot. Histogram je histogram sloupce
+s numerickou proměnnou.
+
+    Typické použití:
+
+    chart = Histogram(df, col_name)  # inicializace
+    chart.sort_data(sort_by="index")  # nastavení řazení
+    chart.format(symbol="*")  # nastavení formátu
+    chart.show()  # vypsání grafu
+"""
+
+
 import pandas as pd
 
 
