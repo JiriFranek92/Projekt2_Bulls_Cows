@@ -248,15 +248,18 @@ class Histogram(AsciiChart):
 
     @binwidth.setter
     def binwidth(self, value):
-        try:
-            value_float = float(value)
-        except TypeError:
-            raise TypeError("'binwidth' must be a number!")
+        if value is None:
+            self._binwidth = None
         else:
-            if value_float < 1:
-                raise ValueError("'binwidth' must be greater than 0!")
+            try:
+                value_float = float(value)
+            except TypeError:
+                raise TypeError("'binwidth' must be a number!")
             else:
-                self._binwidth = value_float
+                if value_float < 1:
+                    raise ValueError("'binwidth' must be greater than 0!")
+                else:
+                    self._binwidth = value_float
 
     @property
     def precision(self):
