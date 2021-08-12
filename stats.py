@@ -111,9 +111,10 @@ class Stats:
         row_count = len(self.df)
         self.df = self.df.dropna(axis=0)
         invalid_row_count = row_count - len(self.df)
-        self.errors.append(
-            f"Warning! Removed {invalid_row_count} rows with wrong data type"
-            f" from global stats")
+        if invalid_row_count:
+            self.errors.append(
+                f"Warning! Removed {invalid_row_count} rows "
+                f"with wrong data type from global stats")
 
         for col in ['game_id', 'n_guesses']:
             self.df[col] = self.df[col].astype(int)
@@ -125,9 +126,10 @@ class Stats:
                       & (self.df["time_to_win"] > 0))
         invalid_row_count = len(self.df) - sum(valid_rows)
         self.df = self.df[valid_rows]
-        self.errors.append(
-            f"Warning! Removed {invalid_row_count} rows with invalid values"
-            f" from global stats")
+        if invalid_row_count:
+            self.errors.append(
+                f"Warning! Removed {invalid_row_count} rows "
+                f"with invalid values from global stats")
 
     def add(self, new_stats):
         """Přidá data do dataframe a zapíše do csv souboru.
