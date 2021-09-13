@@ -21,6 +21,8 @@ from time import time
 
 from numpy import nan
 import pandas as pd
+from pandera import DataFrameSchema, Column, Check, errors
+import pandera.errors
 
 
 def _get_path(filename):
@@ -65,8 +67,8 @@ class Stats:
         self.df = self.__import_df(self.path)
         if self.df is not None:
             self.__validate_df()
-        if self.valid:
-            self.__manage_invalid_values()
+        # if self.valid:
+        #     self.__manage_invalid_values()
 
     def __import_df(self, path):
         # Importuje dataframe pokud soubor existuje a má správný formát,
@@ -84,52 +86,49 @@ class Stats:
             return df
 
     def __validate_df(self):
-        # Vybere správné sloupce z nahrané dtaframe,
-        # pokud některý chybí tak ho/je zapíše do chyb
-        if set(Stats.df_columns).issubset(self.df.columns):
-            self.df = self.df[list(Stats.df_columns)]
-        else:
-            self.valid = False
-            missing_columns = set(Stats.df_columns) - set(self.df.columns)
-            self.errors.append(
-                f"Stats validation Error!"
-                f" Column(s) {missing_columns} are missing!")
+        def get_invalid_row_indices(exc: pandera.errors.SchemaErrors, *cases):
+            return exc.failure_cases.loc[exc.failure_cases["check"].isin(cases),
+                                         "index"].unique()
 
-    def __manage_invalid_values(self):
-        # odstraní data špatného typu a hodnot
-        # poznámka: pokud nějaké jsou, pouze se zapíše varování,
-        # dataframe jako taková se stále považuje za validní
-        self.__remove_wrong_datatypes()
-        self.__remove_invalid_values()
+        correct_data_types = DataFrameSchema(
+            {
+                "game_id": Column(int, coerce=True),
+                "n_guesses": Column(int, coerce=True),
+                "time_to_win": Column(float, coerce=True)
+            })
 
-    def __remove_wrong_datatypes(self):
-        # pokusí se převést data na čísla, hodnoty chybného typu převede na nan
-        # pokud jsou řádky s nan, odstraní je a počet zapíše do varování
-        # nakonec převede sloupce id a počtu hádání na int
-        for col in self.df.columns:
-            self.df[col] = pd.to_numeric(self.df[col], errors='coerce')
-        row_count = len(self.df)
-        self.df = self.df.dropna(axis=0)
-        invalid_row_count = row_count - len(self.df)
-        if invalid_row_count:
-            self.errors.append(
-                f"Warning! Removed {invalid_row_count} rows "
-                f"with wrong data type from global stats")
+        correct_values = DataFrameSchema(
+            {
+                "game_id": Column(int, Check.greater_than(0), coerce=True),
+                "n_guesses": Column(int, Check.greater_than(0), coerce=True),
+                "time_to_win": Column(float, Check.greater_than(0), coerce=True)
+            })
 
-        for col in ['game_id', 'n_guesses']:
-            self.df[col] = self.df[col].astype(int)
+        for schema in [correct_data_types, correct_values]:
+            try:
+                schema.validate(self.df, lazy=True)
+            except errors.SchemaErrors as e:
+                if "column_in_dataframe" in e.failure_cases.check.values:
+                    missing_columns = ",".join(
+                        e.failure_cases.loc[e.failure_cases["check"] == "column_in_dataframe", "failure_case"])
+                    self.valid = False
+                    self.errors.append(
+                        f"Stats validation Error!"
+                        f" Column(s) '{missing_columns}' are missing!")
+                    return
+                elif schema == correct_data_types:
+                    bad_types = get_invalid_row_indices(e, "coerce_dtype('int64')", "coerce_dtype('float64')")
+                    self.errors.append(
+                                f"Warning! Removed {len(bad_types)} rows "
+                                f"with wrong data type from global stats")
+                elif schema == correct_values:
+                    bad_values = get_invalid_row_indices(e, "greater_than(0)")
+                    self.errors.append(
+                        f"Warning! Removed {len(bad_values)} rows "
+                        f"with invalid values from global stats")
+                self.df = e.data.drop(e.failure_cases["index"])
 
-    def __remove_invalid_values(self):
-        # odstraní řádky, kde některá z hodnot je záporná
-        # jejich případný počet zapíše do varování
-        valid_rows = ((self.df["n_guesses"] > 0) & (self.df["game_id"] > 0)
-                      & (self.df["time_to_win"] > 0))
-        invalid_row_count = len(self.df) - sum(valid_rows)
-        self.df = self.df[valid_rows]
-        if invalid_row_count:
-            self.errors.append(
-                f"Warning! Removed {invalid_row_count} rows "
-                f"with invalid values from global stats")
+        self.df = self.df[list(Stats.df_columns)]
 
     def add(self, new_stats):
         """Přidá data do dataframe a zapíše do csv souboru.
