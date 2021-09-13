@@ -10,6 +10,10 @@ from game import BullsAndCows
 
 def n_guesses_chart():
     # vytvoří a vypíše graf počtu hádání
+    if not global_stats.valid:
+        print("Global Statistics unavailable!")
+        return
+
     chart = Histogram(data=global_stats.df, x="n_guesses", precision=0)
     chart.sort_data(sort_by="index")
     chart.format(labels=["GUESSES", "GAMES"])
@@ -19,6 +23,10 @@ def n_guesses_chart():
 
 def time_to_win_chart():
     # vytvoří a vypíše graf časů dohrání
+    if not global_stats.valid:
+        print("Global Statistics unavailable!")
+        return
+
     chart = Histogram(data=global_stats.df, x="time_to_win", precision=-1)
     chart.sort_data(sort_by="index")
     chart.format(labels=["TIME TO WIN(s)", "GAMES"])
@@ -28,6 +36,10 @@ def time_to_win_chart():
 
 def raw_data():
     # vypíše tabulku se surovými daty
+    if not global_stats.valid:
+        print("Global Statistics unavailable!")
+        return
+
     print(tabulate(global_stats.df, showindex=False, tablefmt="psql",
                    headers=("Game \nnumber", "Number of \nGuesses",
                             "Time to \nwin")))
