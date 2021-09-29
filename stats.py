@@ -142,7 +142,7 @@ class Stats:
             raise TypeError("'new_stats' must be an instance of class "
                             "StatsCounter!")
         self.df = self.df.append(new_stats.df, ignore_index=True)
-        self.df.to_csv(self.path, index=False, header=False, mode="a")
+        self.df.to_csv(self.path, index=False, header=False)  # , mode="a"
 
     def __str__(self):
         """Vypíše cestu k csv souboru a dataframe dat."""
